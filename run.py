@@ -26,7 +26,9 @@ parser.add_argument('--b1', type=float, default=0.5, help='adam: decay of first 
 parser.add_argument('--b2', type=float, default=0.999, help='adam: decay of first order momentum of gradient')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
 parser.add_argument('--latent_dim', type=int, default=100, help='dimensionality of the latent space')
-parser.add_argument('--img_size', type=int, default=32, help='size of each image dimension')
+parser.add_argument("--img_width", type=int, default=250, help="width of each image")
+parser.add_argument("--img_height", type=int, default=360, help="height of each image")
+# parser.add_argument('--img_size', type=int, default=32, help='size of each image dimension')
 parser.add_argument('--channels', type=int, default=1, help='number of image channels')
 parser.add_argument('--sample_interval', type=int, default=400, help='interval between image sampling')
 opt = parser.parse_args()
@@ -47,8 +49,20 @@ class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
 
+    
+        self.init_width = opt.img_width // 4
+        self.init_height = opt.img_height // 4
+        
+        
+        # self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128 * opt.init_width * opt.init_height))
+
+        """
         self.init_size = opt.img_size // 4
         self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128*self.init_size**2))
+        """
+
+        # TODO: Need to change blocks to accept (batch_size, width, height, 2 * channels)
+        # and return (batch_size, width, height, channels)
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),
@@ -66,7 +80,12 @@ class Generator(nn.Module):
 
     def forward(self, z):
         out = self.l1(z)
-        out = out.view(out.shape[0], 128, self.init_size, self.init_size)
+        
+        (batch_size, 6, width, height)
+        (batch_size, 128, init_width, init_height)
+        
+        # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
+        out = out.view(out.shape[0], 128, self.init_width, self.init_height)
         img = self.conv_blocks(out)
         return img
 
@@ -90,9 +109,15 @@ class Discriminator(nn.Module):
         )
 
         # The height and width of downsampled image
+        ds_width = opt.img_width // 2**4
+        ds_height = opt.img_height // 2**4
+        self.adv_layer = nn.Sequential(nn.Linear(128 * ds_width * ds_height, 1), nn.Sigmoid())
+
+        """
         ds_size = opt.img_size // 2**4
         self.adv_layer = nn.Sequential( nn.Linear(128*ds_size**2, 1),
                                         nn.Sigmoid())
+        """
 
     def forward(self, img):
         out = self.model(img)
@@ -122,17 +147,6 @@ discriminator.apply(weights_init_normal)
 dataset = BreakoutDataset()
 dataloader = DataLoader(dataset, batch_size=opt.batch_size, shuffle=True)
 
-for i, (x, y) in enumerate(dataloader):
-    print(type(x), type(y))
-
-    befores, afters = zip(*x)
-    befores, afters = torch.stack(befores), torch.stack(afters)
-
-    print(befores.shape, afters.shape, y.shape)
-
-    if i > 1:
-        assert(False)
-
 # Optimizers
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
@@ -144,7 +158,11 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 
 for epoch in range(opt.n_epochs):
+    for 
     for i, (x, y) in enumerate(dataloader):
+
+        befores, afters = x
+        imgs = y
 
         # Adversarial ground truths
         valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
@@ -152,7 +170,7 @@ for epoch in range(opt.n_epochs):
 
         # Configure input
         real_imgs = Variable(imgs.type(Tensor))
-
+        
         # -----------------
         #  Train Generator
         # -----------------
@@ -160,7 +178,8 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise as generator input
-        z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+        z = Variable(
+        # z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
