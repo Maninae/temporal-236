@@ -26,16 +26,15 @@ parser.add_argument('--b1', type=float, default=0.5, help='adam: decay of first 
 parser.add_argument('--b2', type=float, default=0.999, help='adam: decay of first order momentum of gradient')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
 parser.add_argument('--latent_dim', type=int, default=100, help='dimensionality of the latent space')
-parser.add_argument("--img_width", type=int, default=250, help="width of each image")
-parser.add_argument("--img_height", type=int, default=360, help="height of each image")
+parser.add_argument("--img_width", type=int, default=256, help="width of each image")
+parser.add_argument("--img_height", type=int, default=256, help="height of each image")
 # parser.add_argument('--img_size', type=int, default=32, help='size of each image dimension')
 parser.add_argument('--channels', type=int, default=1, help='number of image channels')
 parser.add_argument('--sample_interval', type=int, default=400, help='interval between image sampling')
 opt = parser.parse_args()
 print(opt)
 
-cuda = False
-# cuda = True if torch.cuda.is_available() else False
+cuda = True if torch.cuda.is_available() else False
 
 
 def weights_init_normal(m):
@@ -191,12 +190,6 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 #  Training
 # ----------
 
-"""
-for i, (x, y) in enumerate(dataloader):
-    print(x[0].shape, x[1].shape, y.shape)
-    if i > 1:
-        assert(False)
-"""
 
 for epoch in range(opt.n_epochs):
     for i, (x, y) in enumerate(dataloader):
@@ -218,13 +211,11 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise as generator input
-        z = Variable(inputs)
+        z = Variable(inputs.type(Tensor))
         # z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
-        print(gen_imgs.shape, valid.shape)
-
 
         # Loss measures generator's ability to fool the discriminator
         g_loss = adversarial_loss(discriminator(gen_imgs), valid)
