@@ -34,7 +34,8 @@ parser.add_argument('--sample_interval', type=int, default=400, help='interval b
 opt = parser.parse_args()
 print(opt)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = False
+# cuda = True if torch.cuda.is_available() else False
 
 
 def weights_init_normal(m):
@@ -48,18 +49,6 @@ def weights_init_normal(m):
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-
-    
-        self.init_width = opt.img_width // 4
-        self.init_height = opt.img_height // 4
-        
-        
-        # self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128 * opt.init_width * opt.init_height))
-
-        """
-        self.init_size = opt.img_size // 4
-        self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128*self.init_size**2))
-        """
 
         """
         # TODO: Need to change blocks to accept (batch_size, width, height, 2 * channels)
@@ -85,34 +74,51 @@ class Generator(nn.Module):
             img = self.z_to_y(z)
             return img
 
+        We also probably want the images to be square and powers of 2, so that we can
+        shrink and grow them without dealing with one-off cases along the way.
         """
 
-        """
-        self.conv_blocks = nn.Sequential(
-            nn.BatchNorm2d(128),
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 128, 3, stride=1, padding=1),
-            nn.BatchNorm2d(128, 0.8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64, 0.8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(64, opt.channels, 3, stride=1, padding=1),
+        # Downsamples the before and after frames to latent representations
+        self.x_to_z = nn.Sequential(
+
+            nn.BatchNorm2d(2 * opt.channels),
+            nn.Conv2d(2 * opt.channels, 20, 3, stride=1, padding=1),
+            nn.MaxPool2d(2), 
+            
+            nn.BatchNorm2d(20),
+            nn.Conv2d(20, 40, 3, stride=1, padding=1),
+            nn.MaxPool2d(2),
+            
+            nn.BatchNorm2d(40),
+            nn.Conv2d(40, 80, 3, stride=1, padding=1),
+            nn.MaxPool2d(2),
+            
             nn.Tanh()
         )
-        """
 
-    def forward(self, z):
-        out = self.l1(z)
-        
-        (batch_size, 6, width, height)
-        (batch_size, 128, init_width, init_height)
-        
-        # out = out.view(out.shape[0], 128, self.init_size, self.init_size)
-        out = out.view(out.shape[0], 128, self.init_width, self.init_height)
-        img = self.conv_blocks(out)
+        # Upsamples latent representations to predicted frames 
+        self.z_to_y = nn.Sequential(
+            nn.BatchNorm2d(80),
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(80, 40, 3, stride=1, padding=1),
+
+            nn.BatchNorm2d(40, 0.8),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(40, 20, 3, stride=1, padding=1),
+            
+            nn.BatchNorm2d(20, 0.8),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(20, opt.channels, 3, stride=1, padding=1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        z = self.x_to_z(x)
+        img = self.z_to_y(z)
         return img
+
 
 class Discriminator(nn.Module):
     def __init__(self):
@@ -126,29 +132,32 @@ class Discriminator(nn.Module):
                 block.append(nn.BatchNorm2d(out_filters, 0.8))
             return block
 
+        # Changed the number of discriminator blocks to match number of upsampling blocks
+        self.model = nn.Sequential(
+            *discriminator_block(opt.channels, 20, bn=False),
+            *discriminator_block(20, 40),
+            *discriminator_block(40, 80),
+        )
+
+        """
         self.model = nn.Sequential(
             *discriminator_block(opt.channels, 16, bn=False),
             *discriminator_block(16, 32),
             *discriminator_block(32, 64),
             *discriminator_block(64, 128),
         )
+        """
 
         # The height and width of downsampled image
-        ds_width = opt.img_width // 2**4
-        ds_height = opt.img_height // 2**4
-        self.adv_layer = nn.Sequential(nn.Linear(128 * ds_width * ds_height, 1), nn.Sigmoid())
-
-        """
-        ds_size = opt.img_size // 2**4
-        self.adv_layer = nn.Sequential( nn.Linear(128*ds_size**2, 1),
-                                        nn.Sigmoid())
-        """
+        # Downsampled 3 times by a factor of 2... 
+        ds_width = opt.img_width // 8 
+        ds_height = opt.img_height // 8 
+        self.adv_layer = nn.Sequential(nn.Linear(80 * ds_width * ds_height, 1), nn.Sigmoid())
 
     def forward(self, img):
         out = self.model(img)
         out = out.view(out.shape[0], -1)
         validity = self.adv_layer(out)
-
         return validity
 
 
@@ -182,19 +191,25 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 #  Training
 # ----------
 
+"""
+for i, (x, y) in enumerate(dataloader):
+    print(x[0].shape, x[1].shape, y.shape)
+    if i > 1:
+        assert(False)
+"""
+
 for epoch in range(opt.n_epochs):
-    for 
     for i, (x, y) in enumerate(dataloader):
 
-        befores, afters = x
-        imgs = y
+        inputs = torch.cat(x, 1)
+        targets = y
 
         # Adversarial ground truths
-        valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
-        fake = Variable(Tensor(imgs.shape[0], 1).fill_(0.0), requires_grad=False)
+        valid = Variable(Tensor(targets.shape[0], 1).fill_(1.0), requires_grad=False)
+        fake = Variable(Tensor(targets.shape[0], 1).fill_(0.0), requires_grad=False)
 
         # Configure input
-        real_imgs = Variable(imgs.type(Tensor))
+        real_imgs = Variable(targets.type(Tensor))
         
         # -----------------
         #  Train Generator
@@ -203,11 +218,13 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise as generator input
-        z = Variable(
+        z = Variable(inputs)
         # z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
+        print(gen_imgs.shape, valid.shape)
+
 
         # Loss measures generator's ability to fool the discriminator
         g_loss = adversarial_loss(discriminator(gen_imgs), valid)
