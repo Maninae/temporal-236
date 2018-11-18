@@ -61,9 +61,33 @@ class Generator(nn.Module):
         self.l1 = nn.Sequential(nn.Linear(opt.latent_dim, 128*self.init_size**2))
         """
 
+        """
         # TODO: Need to change blocks to accept (batch_size, width, height, 2 * channels)
         # and return (batch_size, width, height, channels)
 
+        Probably want something like the following:
+
+            self.x_to_z = nn.Sequential(
+                ...
+                ...
+                ...
+            )
+
+            self.z_to_y = nn.Sequential(
+                ...
+                ...
+                ...
+            )
+
+        Then in forward, we would do something like this:
+
+            z = self.x_to_z(x)
+            img = self.z_to_y(z)
+            return img
+
+        """
+
+        """
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),
             nn.Upsample(scale_factor=2),
@@ -77,6 +101,7 @@ class Generator(nn.Module):
             nn.Conv2d(64, opt.channels, 3, stride=1, padding=1),
             nn.Tanh()
         )
+        """
 
     def forward(self, z):
         out = self.l1(z)
