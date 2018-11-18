@@ -7,12 +7,18 @@ if __name__ == "__main__":
 
     reader = GifReader()
     breakout_dir = join(paths.sequences_dir, "breakout")
-    all_gifs = [join(breakout_dir, name) for name in os.listdir(breakout_dir)
+    gif_dir = join(breakout_dir, "gifs")
+    all_gifs = [join(gif_dir, name) for name in os.listdir(gif_dir)
                                           if name.endswith(".gif")]
 
     for path in all_gifs:
-        outdir = join(breakout_dir, os.path.basename(path)[:-4] + "_out") 
-        os.makedirs(outdir, exist_ok=True)
+        outdir = join(breakout_dir, "tmp-output", os.path.basename(path)[:-4] + "_out") 
+        try:
+            os.mkdir(outdir)
+            print("Successfully created %s." % outdir)
+        except OSError:
+            print("NO! Already exists, %s." % outdir)
+            continue
         reader.save_each_frame(path, outdir)
 
     # Rename all the gifs
