@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+"""
 os.makedirs('images', exist_ok=True)
 
 parser = argparse.ArgumentParser()
@@ -31,6 +32,7 @@ opt = parser.parse_args()
 print(opt)
 
 cuda = True if torch.cuda.is_available() else False
+"""
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -98,6 +100,7 @@ class Discriminator(nn.Module):
 
         return validity
 
+"""
 # Loss function
 adversarial_loss = torch.nn.BCELoss()
 
@@ -183,3 +186,4 @@ for epoch in range(opt.n_epochs):
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
             save_image(gen_imgs.data[:25], 'images/%d.png' % batches_done, nrow=5, normalize=True)
+"""

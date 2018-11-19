@@ -29,7 +29,11 @@ class BreakoutDataset(Dataset):
         super(BreakoutDataset, self).__init__()
         
         # Path is relative to repo root
-        self.directory = join(sequences_dir, "breakout", "all-frames")
+        
+        # TODO: Change back to "all-framnes" or migrate completely to "square-frames{"
+
+        self.directory = join(sequences_dir, "breakout", "square-frames")
+        # self.directory = join(sequences_dir, "breakout", "all-frames")
         self.files = sorted([filename for filename in os.listdir(self.directory) if filename.endswith(".png")])
         self.transforms = transforms if transforms is not None else BreakoutDataset._default_transforms
 
@@ -118,5 +122,3 @@ class AnimatedDataset(Dataset):
         y = current
         return (x, y)
 
-
-        
