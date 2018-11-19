@@ -1,5 +1,5 @@
 import os
-from os.path import join
+from os.path import join, isdir, basename
 
 from torch.utils.data import Dataset, DataLoader
 from util.paths import sequences_dir
@@ -59,6 +59,7 @@ class BreakoutDataset(Dataset):
         return (x, y)
 
 
+
 class AnimatedDataset(Dataset):
     """ The dataset of consecutive triplets of frames from one of the animated sequences.
         There can be multiple videos, and we want to draw uniformly at random
@@ -67,14 +68,27 @@ class AnimatedDataset(Dataset):
     """
     
     _default_transforms = transforms.Compose([
-        # Data augmentation? horizontal flip
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
 
-    def __init__(self, directory, transforms=None):
+    _augmented_transforms = transforms.Compose([
+        # Data augmentation? horizontal flip but ALL 3 frames in triplet only
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
+
+    # Debug print
+    def dprint(self, *args, **kwargs):
+        if self.debug:
+            return print("[AnimatedDataset]", *args, **kwargs)
+
+
+    
+    def __init__(self, directory, transforms=None, debug=False):
         super(AnimatedDataset, self).__init__()
         
+        self.debug = debug
         self.directory = directory
+        self.dprint("Creating dataset from dir:", self.directory)
 
         # The structure under self.directory should be:
         # self.directory (e.g. "{root} / data / {train|val|test}")
@@ -87,13 +101,21 @@ class AnimatedDataset(Dataset):
         #  |      |--> 00001.jpg
         #  |      |--> ...
         # ....
-        self.files_dict = {
-            dirpath: sorted([p for p in os.listdir(dirpath) if p.endswith(".jpg")])
-                for dirpath in os.listdir(self.directory)
-                if os.path.isdir(dirpath)
-        }
+        video_dirs = [join(self.directory, p) for p in os.listdir(self.directory) if isdir(join(self.directory, p))]
+        self.dprint("Discovered video dirs:", video_dirs)
+
+        self.files_dict = {}
+        for dirpath in video_dirs:
+            files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".jpg")])
+            if len(files) < 3:
+                continue # Ignore this directory, not enough frames to form triplets
+
+            self.files_dict[dirpath] = files
+            self.dprint("%s: %d JPGs." % (basename(dirpath), len(files)))
         
         self.len = sum([len(files) - 2 for files in self.files_dict.values()])
+        self.dprint("len(self):", self.len)
+
         self.transforms = transforms if transforms is not None else AnimatedDataset._default_transforms
 
     def __len__(self):
@@ -102,8 +124,7 @@ class AnimatedDataset(Dataset):
         return self.len
 
 
-    def _tensor_from_img_file(self, filename):
-        filepath = join(self.directory, filename)
+    def _tensor_from_img_file(self, filepath):
         image = Image.open(filepath).convert("L")
         return self.transforms(image)
 
@@ -114,7 +135,7 @@ class AnimatedDataset(Dataset):
         # Use items() iterator to generate an implicit ordering for videos' frames, then simply index
         for dirpath, files in self.files_dict.items():
             if i < len(files) - 2:
-                before, current, after = map(self._tensor_from_img_file, self.files[i:i+3])
+                before, current, after = map(self._tensor_from_img_file, files[i:i+3])
                 break
             i -= len(files) - 2
         
