@@ -244,3 +244,10 @@ for epoch in range(opt.n_epochs):
         if batches_done % opt.sample_interval == 0:
             save_image(gen_imgs.data[:25], 'images/%d.png' % batches_done, nrow=5, normalize=True)
 
+    # Save the state of the model
+    torch.save((generator.state_dict,
+                discriminator.state_dict,
+                optimizer_G.state_dict,
+                optimizer_D.state_dict), 
+                "checkpoint_{}.pth".format(epoch))
+        
