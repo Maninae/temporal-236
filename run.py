@@ -1,3 +1,12 @@
+"""
+This code is modified from:
+eriklindernoren/PyTorch-GAN/implementations/dcgan/dcgan.py
+for our CS 236 project on video frame interpolation.
+
+URL:
+https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/dcgan/dcgan.py
+"""
+
 import argparse
 import os
 import numpy as np
