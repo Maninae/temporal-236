@@ -18,8 +18,7 @@ class Generator(nn.Module):
             Returns:
                 None
         """
-
-        super(Generator, self).__init__()
+        super().__init__()
 
         def generator_x_to_z_block(in_channels, out_channels):
             return [
@@ -75,8 +74,7 @@ class Discriminator(nn.Module):
             Returns:
                 None
         """
-
-        super(Discriminator, self).__init__()
+        super().__init__()
 
         def discriminator_block(in_channels, out_channels, bn=True):
             block = [
@@ -90,7 +88,7 @@ class Discriminator(nn.Module):
 
         # Maps the frames to latent representations
         self.model = nn.Sequential(
-            *discriminator_block(1, 20),
+            *discriminator_block(channels, 20),
             *discriminator_block(20, 40),
             *discriminator_block(40, 80)
         )

@@ -1,3 +1,5 @@
+matplotlib
+numpy
+pyyaml
 torch
 torchvision
-pyyaml
