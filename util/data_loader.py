@@ -33,7 +33,7 @@ class GenericDataset(Dataset):
     ])
 
     def __init__(self, directory, transforms=None):
-        super(GenericDataset, self).__init__()
+        super().__init__()
         self.directory = directory
         self.files = sorted([filename for filename in os.listdir(directory) if filename.endswith(".png")])
         self.transforms = transforms if transforms else GenericDataset._default_transforms
