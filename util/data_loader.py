@@ -11,6 +11,13 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+def dataset_factory(dataset):
+    """ Returns a Dataset instance for the given `dataset` name. """
+    if dataset == "animated": return AnimatedDataset()
+    if dataset == "breakout": return BreakoutDataset()
+    if dataset == "ocean": return OceanDataset()
+    raise Exception("Invalid dataset: {}".format(dataset))
+    
 
 class GenericDataset(Dataset):
     """ Returns frame examples in the following format:
