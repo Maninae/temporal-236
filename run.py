@@ -32,7 +32,8 @@ from util.data_loader import dataset_factory
 
 # Load config from file
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="config.yaml", help="path to config file")
+parser.add_argument("--config", type=str, default="config.yaml", 
+                    help="path to config file")
 args = parser.parse_args()
 with open(args.config, "r") as f:
     config = yaml.load(f)
@@ -40,6 +41,7 @@ with open(args.config, "r") as f:
 
 # Create any required directories if necessary
 os.makedirs("samples", exist_ok=True)
+os.makedirs("samples/{}".format(config["dataset"]), exist_ok=True)
 os.makedirs("checkpoints", exist_ok=True)
 os.makedirs("checkpoints/{}".format(config["dataset"]), exist_ok=True)
 
@@ -52,7 +54,7 @@ Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTen
 # Initialize loss function
 adversarial_loss = torch.nn.BCELoss().to(device)
 
-# Initialize generator and discriminator
+# Initialize generator
 generator = Generator(config["channels"]).to(device)
 generator.apply(weights_init)
 
@@ -79,6 +81,7 @@ dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 # TODO: Add plots for discriminator and generator losses
 # TODO: Split datasets into train and val
 # TODO: Modify train loop to also evaluate on val
+# TODO: Update code to conform to most recent PyTorch version
 
 # Track losses for each batch
 d_losses = []
@@ -123,8 +126,10 @@ for epoch in range(config["n_epochs"]):
         optimizer_D.step()
 
         # Print progress
-        print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % (epoch, config["n_epochs"], i, len(dataloader),
-                                                            d_loss.item(), g_loss.item()))
+        print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % 
+            (epoch, config["n_epochs"], i, len(dataloader), d_loss.item(), 
+             g_loss.item())
+        )
 
         # Store losses for plotting
         d_losses.append(d_loss.item())
@@ -133,7 +138,12 @@ for epoch in range(config["n_epochs"]):
         # Generate sample output
         batches_done = epoch * len(dataloader) + i
         if batches_done % config["sample_interval"] == 0:
-            save_image(gen_imgs.data[:25], 'samples/%d.png' % batches_done, nrow=5, normalize=True)
+            save_image(
+                gen_imgs.data[:25], 
+                "samples/{}/{}.png".format(config["dataset"], batches_done)
+                nrow=5, normalize=True
+            )
+            # TODO: Add code to plot losses (and other metrics) here
 
     # Save the state of the model
     torch.save((generator.state_dict,
