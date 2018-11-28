@@ -32,7 +32,7 @@ from util.datasets import dataset_factory
 
 # Load config from file
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="util/config.yaml", 
+parser.add_argument("--config", type=str, default="util/configs/breakout.yaml", 
                     help="path to config file")
 args = parser.parse_args()
 with open(args.config, "r") as f:
@@ -138,7 +138,7 @@ for epoch in range(config["n_epochs"]):
         batches_done = epoch * len(dataloader) + i
         if batches_done % config["sample_interval"] == 0:
             save_image(gen_imgs.data[:25], 
-                       "samples/{}/{}.png".format(config["dataset"], batches_done)
+                       "samples/{}/{}.png".format(config["dataset"], batches_done),
                        nrow=5, normalize=True)
             # TODO: Add code to plot losses (and other metrics) here
 
