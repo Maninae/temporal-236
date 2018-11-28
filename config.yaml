@@ -1,3 +1,6 @@
+# Dataset config
+dataset: "breakout"         # The name of the dataset
+
 # Model config
 channels: 1                 # Number of channels in each image.
 img_size: 256               # Size of each image dimension. Must be an exact power of 2
