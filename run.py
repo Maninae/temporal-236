@@ -126,7 +126,7 @@ for epoch in range(config["n_epochs"]):
         # Generate sample output
         batches_done = epoch * len(dataloader) + i
         if batches_done % config["sample_interval"] == 0:
-            save_image(gen_imgs.data[:25], 'images/%d.png' % batches_done, nrow=5, normalize=True)
+            save_image(gen_imgs.data[:25], 'samples/%d.png' % batches_done, nrow=5, normalize=True)
             # TODO: Generate plots for losses
 
     # Save the state of the model
