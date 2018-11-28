@@ -11,9 +11,6 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-# Custom imports
-from util.paths import sequences_dir
-
 
 class GenericDataset(Dataset):
     """ Returns frame examples in the following format:
@@ -52,17 +49,21 @@ class GenericDataset(Dataset):
 
 
 class OceanDataset(GenericDataset):
-    """ Serves examples from the `ocean.mp4` video. """
+    """ Serves examples from the `ocean.mp4` video. 
+        
+        Assumes the data folder is in the root directory of the repo.
+    """
     def __init__(self):
-        self.directory = join(sequences_dir, "ocean", "all-frames")
-        super(OceanDataset, self).__init__(self.directory)
+        super().__init__("data/ocean")
 
 
 class BreakoutDataset(GenericDataset):
-    """ Serves examples from the Breakout video. """
+    """ Serves examples from the Breakout video. 
+    
+        Assumes the data folder is in the root directory of the repo.
+    """
     def __init__(self):
-        self.directory = join(sequences_dir, "breakout", "all-frames")
-        super(BreakoutDataset, self).__init__(self.directory)
+        super().__init__("data/breakout")
 
 #################################################
 
