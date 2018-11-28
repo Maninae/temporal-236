@@ -1,8 +1,9 @@
 # Dataset config
-dataset: "breakout"         # The name of the dataset
+dataset: "ocean"            # The name of the dataset
+mode: "rgb"                 # Grayscale ("L") or true color ("RGB")
 
 # Model config
-channels: 1                 # Number of channels in each image.
+channels: 3                 # Number of channels in each image. 1 for grayscale, 3 for true color
 img_size: 256               # Size of each image dimension. Must be an exact power of 2
 
 # Training config
