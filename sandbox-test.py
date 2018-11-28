@@ -6,7 +6,7 @@ import pickle
 if __name__ == "__main__":
     animated_dir = join(sequences_dir, "animated")
     ds = AnimatedDataset(animated_dir, debug=True)
-    with open(join(animated_dir, "AnimatedDataset.pkl")) as f:
+    with open(join(animated_dir, "AnimatedDataset.pkl"), "wb") as f:
         pickle.dump(ds, f)
     
     print(len(ds))

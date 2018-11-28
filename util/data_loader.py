@@ -84,7 +84,7 @@ class AnimatedDataset(Dataset):
             return print("[AnimatedDataset]", *args, **kwargs)
 
 
-    def __init__(self, directory, cut_threshold=16000, transforms=None, debug=False):
+    def __init__(self, directory, cut_threshold=15000, transforms=None, debug=False):
         super(AnimatedDataset, self).__init__()
         
         # Debugging: video cut heuristic
@@ -113,12 +113,7 @@ class AnimatedDataset(Dataset):
 
         self.files_dict = {}
         self.selectable_dict = {}
-        if isfile():
-            try:
-                return
-            except:
-                pass # Continue on to construct these dicts from scratch
-
+        
         # Construct the files_dict and selectable_dict
         for dirpath in video_dirs:
             files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".png")])
