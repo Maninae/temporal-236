@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 # Custom imports
 from util.paths import sequences_dir
 
+
 class GenericDataset(Dataset):
     """ Returns frame examples in the following format:
 
@@ -21,9 +22,11 @@ class GenericDataset(Dataset):
             y[i] = frame_i+1
 
     """
+
     _default_transforms = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))])  # mean and stddev
+        transforms.Normalize((0.5,), (0.5,)) # mean and std
+    ])
 
     def __init__(self, directory, transforms=None):
         super(GenericDataset, self).__init__()
