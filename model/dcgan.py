@@ -9,9 +9,7 @@ class Generator(nn.Module):
         """ Initializes the Generator.
 
             Args:
-                channels: list of int
-                    Contains the channel sizes at each stage in the Generator.
-                    channels[0] should be the number of channels for a single image.
+                Number of channels for each image in the dataset.
 
             Returns:
                 None
@@ -34,19 +32,19 @@ class Generator(nn.Module):
                 nn.Conv2d(in_channels, out_channels, 3, stride=1, padding=1),
             ]
 
-        # Downsamples the before and after frames to latent representations
-        x_to_z = generator_x_to_z_block(2 * channels[0], channels[1])
-        for i in range(1, len(channels) - 1):
-            x_to_z.extend(generator_x_to_z_block(channels[i], channels[i + 1]))
-        x_to_z.append(nn.Tanh())
-        self.x_to_z = nn.Sequential(*x_to_z)
+        self.x_to_z = nn.Sequential(
+            *generator_x_to_z_block(2 * channels, 20),
+            *generator_x_to_z_block(20, 40),
+            *generator_x_to_z_block(40, 80),
+            nn.Tanh(),
+        )
 
-        # Upsamples latent representations to predicted frames
-        z_to_y = []
-        for i in range(len(channels) - 1, 0, -1):
-            z_to_y.extend(generator_z_to_y_block(channels[i], channels[i - 1]))
-        z_to_y.append(nn.Tanh())
-        self.z_to_y = nn.Sequential(*z_to_y)
+        self.z_to_y = nn.Sequential(
+            *generator_z_to_y_block(80, 40),
+            *generator_z_to_y_block(40, 20),
+            *generator_z_to_y_block(20, channels),
+            nn.Tanh()
+        )
 
     def forward(self, x):
         z = self.x_to_z(x)
@@ -60,9 +58,8 @@ class Discriminator(nn.Module):
         """ Initializes the Discriminator.
 
             Args:
-                channels: list of int
-                    Contains the channel sizes at each stage in the Discriminator.
-                    channels[0] should be the number of channels for a single image.
+                channels: int
+                    Number of channels for each image in the dataset.
                 img_size: int
                     The size of the images in each spatial dimension.
 
@@ -82,14 +79,15 @@ class Discriminator(nn.Module):
                 block.append(nn.BatchNorm2d(out_channels, 0.8))
             return block
 
-        model = discriminator_block(channels[0], channels[1], bn=False)
-        for i in range(1, len(channels) - 1):
-            model.extend(discriminator_block(channels[i], channels[i + 1]))
-        self.model = nn.Sequential(*model)
+        self.model = nn.Sequential(
+            *discriminator_block(1, 20),
+            *discriminator_block(20, 40),
+            *discriminator_block(40, 80)
+        )
 
-        ds_size = img_size // (2 ** (len(channels) - 1))
+        ds_size = img_size // 8 # factor of 2 for each block
         self.adv_layer = nn.Sequential(
-            nn.Linear(channels[-1] * ds_size ** 2, 1),
+            nn.Linear(80 * ds_size ** 2, 1),
             nn.Sigmoid()
         )
 

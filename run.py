@@ -157,6 +157,7 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 #  Training
 # ----------
 
+# Track losses for each batch
 d_losses = []
 g_losses = []
 
