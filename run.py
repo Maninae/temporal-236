@@ -1,5 +1,5 @@
 """
-This code is modified from:
+This code is inspirefd by:
 eriklindernoren/PyTorch-GAN/implementations/dcgan/dcgan.py
 for our CS 236 project on video frame interpolation.
 
@@ -27,112 +27,117 @@ from torchvision.utils import save_image
 from model.dcgan import Discriminator
 from model.dcgan import Generator
 from model.dcgan import weights_init
-from util.data_loader import BreakoutDataset
+from util.datasets import BreakoutDataset, AnimatedDataset
 
-# Create directory to store generated samples
-os.makedirs('samples', exist_ok=True)
 
-# Load config from file
-parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="config.yaml", help="path to config file")
-args = parser.parse_args()
-with open(args.config, "r") as f:
-    config = yaml.load(f)
-    pprint.pprint(config)
 
-# Specify device to use for training / evaluation
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if __name__ == "__main__":
+    # Create directory to store generated samples
+    os.makedirs('samples', exist_ok=True)
 
-# Specify default tensor type
-Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+    # Load config from file
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="config.yaml", help="path to config file")
+    args = parser.parse_args()
+    with open(args.config, "r") as f:
+        config = yaml.load(f)
+        pprint.pprint(config)
 
-# Initialize loss function
-adversarial_loss = torch.nn.BCELoss().to(device)
+    # Specify device to use for training / evaluation
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Initialize generator and discriminator
-generator = Generator(config["channels"]).to(device)
-generator.apply(weights_init)
+    # Specify default tensor type
+    Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
-# Initialize discriminator
-discriminator = Discriminator(config["channels"], config["img_size"]).to(device)
-discriminator.apply(weights_init)
+    # Initialize loss function
+    adversarial_loss = torch.nn.BCELoss().to(device)
 
-# Initialize optimizers
-optimizer_G = torch.optim.Adam(generator.parameters(), 
-                               lr=config["lr"], 
-                               betas=(config["b1"], config["b2"]))
-optimizer_D = torch.optim.Adam(discriminator.parameters(), 
-                               lr=config["lr"], 
-                               betas=(config["b1"], config["b2"]))
+    # Initialize generator and discriminator
+    generator = Generator(config["channels"]).to(device)
+    generator.apply(weights_init)
 
-# Initialize dataloader
-dataset = BreakoutDataset()
-dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
+    # Initialize discriminator
+    discriminator = Discriminator(config["channels"], config["img_size"]).to(device)
+    discriminator.apply(weights_init)
 
-# ----------
-#  Training
-# ----------
+    # Initialize optimizers
+    optimizer_G = torch.optim.Adam(generator.parameters(), 
+                                   lr=config["lr"], 
+                                   betas=(config["b1"], config["b2"]))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), 
+                                   lr=config["lr"], 
+                                   betas=(config["b1"], config["b2"]))
 
-# Track losses for each batch
-d_losses = []
-g_losses = []
+    # Initialize dataloader
+    # dataset = BreakoutDataset()
+    with open("data/sequences_raw/animated/AnimatedDataset.pkl", "rb") as f:
+        dataset = pickle.load(f)
+    dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 
-for epoch in range(config["n_epochs"]):
-    for i, (x, y) in enumerate(dataloader):
+    # ----------
+    #  Training
+    # ----------
 
-        # -------
-        #  Setup
-        # -------
+    # Track losses for each batch
+    d_losses = []
+    g_losses = []
 
-        # Inputs and outputs
-        inputs = Variable(torch.cat(x, 1).type(Tensor))
-        real_imgs = Variable(y.type(Tensor))
+    for epoch in range(config["n_epochs"]):
+        for i, (x, y) in enumerate(dataloader):
 
-        # Adversarial ground truths
-        valid = Variable(Tensor(y.shape[0], 1).fill_(1.0), requires_grad=False)
-        fake = Variable(Tensor(y.shape[0], 1).fill_(0.0), requires_grad=False)
+            # -------
+            #  Setup
+            # -------
 
-        # -----------------
-        #  Train Generator
-        # -----------------
+            # Inputs and outputs
+            inputs = Variable(torch.cat(x, 1).type(Tensor))
+            real_imgs = Variable(y.type(Tensor))
 
-        # Loss measures generator's ability to fool the discriminator
-        gen_imgs = generator(inputs)
-        g_loss = adversarial_loss(discriminator(gen_imgs), valid)
-        optimizer_G.zero_grad()
-        g_loss.backward()
-        optimizer_G.step()
+            # Adversarial ground truths
+            valid = Variable(Tensor(y.shape[0], 1).fill_(1.0), requires_grad=False)
+            fake = Variable(Tensor(y.shape[0], 1).fill_(0.0), requires_grad=False)
 
-        # ---------------------
-        #  Train Discriminator
-        # ---------------------
+            # -----------------
+            #  Train Generator
+            # -----------------
 
-        # Loss measures discriminator's ability classify real from generated samples
-        real_loss = adversarial_loss(discriminator(real_imgs), valid)
-        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
-        d_loss = (real_loss + fake_loss) / 2 
-        optimizer_D.zero_grad()
-        d_loss.backward()
-        optimizer_D.step()
+            # Loss measures generator's ability to fool the discriminator
+            gen_imgs = generator(inputs)
+            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
+            optimizer_G.zero_grad()
+            g_loss.backward()
+            optimizer_G.step()
 
-        # Print progress
-        print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % (epoch, config["n_epochs"], i, len(dataloader),
-                                                            d_loss.item(), g_loss.item()))
+            # ---------------------
+            #  Train Discriminator
+            # ---------------------
 
-        # Store losses for plotting
-        d_losses.append(d_loss.item())
-        g_losses.append(g_loss.item())
+            # Loss measures discriminator's ability classify real from generated samples
+            real_loss = adversarial_loss(discriminator(real_imgs), valid)
+            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
+            d_loss = (real_loss + fake_loss) / 2 
+            optimizer_D.zero_grad()
+            d_loss.backward()
+            optimizer_D.step()
 
-        # Generate sample output
-        batches_done = epoch * len(dataloader) + i
-        if batches_done % config["sample_interval"] == 0:
-            save_image(gen_imgs.data[:25], 'images/%d.png' % batches_done, nrow=5, normalize=True)
-            # TODO: Generate plots for losses
+            # Print progress
+            print ("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % (epoch, config["n_epochs"], i, len(dataloader),
+                                                                d_loss.item(), g_loss.item()))
 
-    # Save the state of the model
-    torch.save((generator.state_dict,
-                discriminator.state_dict,
-                optimizer_G.state_dict,
-                optimizer_D.state_dict), 
-                "checkpoint_{}.pth".format(epoch))
-        
+            # Store losses for plotting
+            d_losses.append(d_loss.item())
+            g_losses.append(g_loss.item())
+
+            # Generate sample output
+            batches_done = epoch * len(dataloader) + i
+            if batches_done % config["sample_interval"] == 0:
+                save_image(gen_imgs.data[:25], 'images/%d.png' % batches_done, nrow=5, normalize=True)
+                # TODO: Generate plots for losses
+
+        # Save the state of the model
+        torch.save((generator.state_dict,
+                    discriminator.state_dict,
+                    optimizer_G.state_dict,
+                    optimizer_D.state_dict), 
+                    "checkpoint_{}.pth".format(epoch))
+            
