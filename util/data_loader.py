@@ -1,6 +1,7 @@
 import os
 from os.path import join, isdir, basename
 
+import torch
 from torch.utils.data import Dataset, DataLoader
 from util.paths import sequences_dir
 
@@ -60,6 +61,12 @@ class BreakoutDataset(Dataset):
 
 
 
+
+#################################################
+
+
+
+
 class AnimatedDataset(Dataset):
     """ The dataset of consecutive triplets of frames from one of the animated sequences.
         There can be multiple videos, and we want to draw uniformly at random
@@ -68,12 +75,10 @@ class AnimatedDataset(Dataset):
     """
     
     _default_transforms = transforms.Compose([
-        transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
 
     _augmented_transforms = transforms.Compose([
         # Data augmentation? horizontal flip but ALL 3 frames in triplet only
-        transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
 
     # Debug print
@@ -82,12 +87,17 @@ class AnimatedDataset(Dataset):
             return print("[AnimatedDataset]", *args, **kwargs)
 
 
-    
-    def __init__(self, directory, transforms=None, debug=False):
+    def __init__(self, directory, cut_threshold=4e5, transforms=None, debug=False):
         super(AnimatedDataset, self).__init__()
         
+        # Debugging: video cut heuristic
+        # self.research_stream = open("pixel_deltas.txt", "w")
+
         self.debug = debug
         self.directory = directory
+        # Heuristic for predicting whether there's a cut in the video between two frames.
+        self.cut_threshold = cut_threshold;
+
         self.dprint("Creating dataset from dir:", self.directory)
 
         # The structure under self.directory should be:
@@ -102,21 +112,69 @@ class AnimatedDataset(Dataset):
         #  |      |--> ...
         # ....
         video_dirs = [join(self.directory, p) for p in os.listdir(self.directory) if isdir(join(self.directory, p))]
-        self.dprint("Discovered video dirs:", video_dirs)
+        self.dprint("Discovered %d dirs:" % len(video_dirs), video_dirs)
 
         self.files_dict = {}
+        self.selectable_dict = {}
         for dirpath in video_dirs:
             files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".jpg")])
             if len(files) < 3:
                 continue # Ignore this directory, not enough frames to form triplets
 
             self.files_dict[dirpath] = files
-            self.dprint("%s: %d JPGs." % (basename(dirpath), len(files)))
+
+            self.dprint("Finding cuts / determining selectable indices for:", dirpath)
+            self.selectable_dict[dirpath] = self._selectable_indices_without_cuts(files)
+            
+            self.dprint("%s: %d JPGs, %d selectable."
+                        % (basename(dirpath), len(files), len(self.selectable_dict[dirpath])))
         
-        self.len = sum([len(files) - 2 for files in self.files_dict.values()])
+        self.len = sum(map(len, self.selectable_dict.values())) # Sum of the len() of selectable indices for all dirs
         self.dprint("len(self):", self.len)
 
         self.transforms = transforms if transforms is not None else AnimatedDataset._default_transforms
+        # self.research_stream.close()
+
+
+    def _selectable_indices_without_cuts(self, list_of_files):
+        # e.g. If 3 is in |cut_indices|, then there is a cut between frame 3 and 4.
+        cut_indices = []
+        
+        k = 0
+        first = self._tensor_from_img_file(list_of_files[k])
+        while k < (len(list_of_files) - 1):
+            second = self._tensor_from_img_file(list_of_files[k+1])
+            
+            # Is this a cut?
+            abs_L1_pixel_delta = torch.sum(torch.abs(first - second))
+            is_cut = abs_L1_pixel_delta > self.cut_threshold
+            # ..If so, i is invalid, remove the invalid index
+            if is_cut:
+                self.dprint("We found a cut, passed threshold with L1 diff of:", abs_L1_pixel_delta)
+                cut_indices.append(k)
+
+            # Debugging: video cut heuristic
+            # self.research_stream.write("%04f," % abs_L1_pixel_delta)
+                
+            k += 1
+            first = second
+
+            if k % 100 == 0:
+                self.dprint("k = %d" % k)
+
+        # To generalize the algorithm for finding selectable indices, we will consider
+        #  the end of the video as a cut as well.
+        cut_indices.append(len(list_of_files) - 1)
+
+        valid_indices_to_select = []
+        pre = 0
+        for cut_index in cut_indices:
+            if pre < cut_index:
+                valid_indices_to_select.extend(range(pre, cut_index - 1))
+            pre = cut_index + 1
+
+        return valid_indices_to_select
+
 
     def __len__(self):
         """ Provides the size of the dataset.
@@ -126,20 +184,28 @@ class AnimatedDataset(Dataset):
 
     def _tensor_from_img_file(self, filepath):
         image = Image.open(filepath).convert("L")
-        return self.transforms(image)
+        return transforms.ToTensor()(image)
 
 
     def __getitem__(self, i):
         """ Supports integer indexing from 0 to len(self) exclusive.
         """
-        # Use items() iterator to generate an implicit ordering for videos' frames, then simply index
+        # Use items() iterator to generate an implicit ordering for videos' frames,
+        #  then simply index at the appropriate dirpath's frames
+
+        query = i  # Avoid corrupting input parameter i
+
         for dirpath, files in self.files_dict.items():
-            if i < len(files) - 2:
-                before, current, after = map(self._tensor_from_img_file, files[i:i+3])
+            selectable_indices = self.selectable_dict[dirpath]
+
+            if query < len(selectable_indices):
+                index = selectable_indices[query]
+                before, current, after = map(self.transforms, map(self._tensor_from_img_file, files[index:index+3]))
                 break
-            i -= len(files) - 2
+            query -= len(selectable_indices)
         
         x = (before, after)
         y = current
         return (x, y)
+
 
