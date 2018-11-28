@@ -27,10 +27,8 @@ from torchvision.utils import save_image
 from model.dcgan import Discriminator
 from model.dcgan import Generator
 from model.dcgan import weights_init
-from util.data_loader import BreakoutDataset
+from util.data_loader import dataset_factory
 
-# Create directory to store generated samples
-os.makedirs('samples', exist_ok=True)
 
 # Load config from file
 parser = argparse.ArgumentParser()
@@ -39,6 +37,11 @@ args = parser.parse_args()
 with open(args.config, "r") as f:
     config = yaml.load(f)
     pprint.pprint(config)
+
+# Create any required directories if necessary
+os.makedirs("samples", exist_ok=True)
+os.makedirs("checkpoints", exist_ok=True)
+os.makedirs("checkpoints/{}".format(config["dataset"]), exist_ok=True)
 
 # Specify device to use for training / evaluation
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -66,12 +69,16 @@ optimizer_D = torch.optim.Adam(discriminator.parameters(),
                                betas=(config["b1"], config["b2"]))
 
 # Initialize dataloader
-dataset = BreakoutDataset()
+dataset = dataset_factory(config["dataset"])
 dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 
 # ----------
 #  Training
 # ----------
+
+# TODO: Add plots for discriminator and generator losses
+# TODO: Split datasets into train and val
+# TODO: Modify train loop to also evaluate on val
 
 # Track losses for each batch
 d_losses = []
@@ -127,7 +134,6 @@ for epoch in range(config["n_epochs"]):
         batches_done = epoch * len(dataloader) + i
         if batches_done % config["sample_interval"] == 0:
             save_image(gen_imgs.data[:25], 'samples/%d.png' % batches_done, nrow=5, normalize=True)
-            # TODO: Generate plots for losses
 
     # Save the state of the model
     torch.save((generator.state_dict,
