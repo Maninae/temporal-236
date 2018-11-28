@@ -140,5 +140,5 @@ for epoch in range(config["n_epochs"]):
                 discriminator.state_dict,
                 optimizer_G.state_dict,
                 optimizer_D.state_dict), 
-                "checkpoint_{}.pth".format(epoch))
+                "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
         
