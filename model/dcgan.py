@@ -18,8 +18,7 @@ class Generator(nn.Module):
             Returns:
                 None
         """
-
-        super(Generator, self).__init__()
+        super().__init__()
 
         def generator_x_to_z_block(in_channels, out_channels):
             return [
@@ -75,8 +74,7 @@ class Discriminator(nn.Module):
             Returns:
                 None
         """
-
-        super(Discriminator, self).__init__()
+        super().__init__()
 
         def discriminator_block(in_channels, out_channels, bn=True):
             block = [
