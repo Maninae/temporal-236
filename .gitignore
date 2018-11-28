@@ -1,7 +1,7 @@
-animated/
-data/
-ocean/
-samples/
+animated/*
+data/*
+ocean/*
+samples/*
 .DS_Store
 
 
