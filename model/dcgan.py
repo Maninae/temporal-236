@@ -88,7 +88,7 @@ class Discriminator(nn.Module):
 
         # Maps the frames to latent representations
         self.model = nn.Sequential(
-            *discriminator_block(1, 20),
+            *discriminator_block(channels, 20),
             *discriminator_block(20, 40),
             *discriminator_block(40, 80)
         )
