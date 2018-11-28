@@ -32,9 +32,26 @@ class GenericDataset(Dataset):
         transforms.Normalize((0.5,), (0.5,)) # mean and std
     ])
 
-    def __init__(self, directory, transforms=None):
+    def __init__(self, directory, mode, transforms=None):
+        """ Initializes the GenericDataset.
+
+            Args:
+                directory: str
+                    The path to the directory containing the frame data.
+                mode: str
+                    The mode to use when retrieving the frame data. Should be
+                    one of "L" (for 8-bit pixels in black and white) or
+                    "RGB" (for 3x8-bit pixels in true color)
+                transforms: transforms.Compose
+                    Optional, used to transform the frame data if the default
+                    transforms are not desired.
+
+            Returns:
+                None
+        """
         super().__init__()
         self.directory = directory
+        self.mode = mode
         self.files = sorted([filename for filename in os.listdir(directory) if filename.endswith(".png")])
         self.transforms = transforms if transforms else GenericDataset._default_transforms
 
@@ -51,7 +68,7 @@ class GenericDataset(Dataset):
 
     def _tensor_from_img_file(self, filename):
         filepath = join(self.directory, filename)
-        image = Image.open(filepath).convert("L")
+        image = Image.open(filepath).convert(self.mode)
         return self.transforms(image)
 
 
@@ -61,7 +78,7 @@ class OceanDataset(GenericDataset):
         Assumes the data folder is in the root directory of the repo.
     """
     def __init__(self):
-        super().__init__("data/ocean")
+        super().__init__("data/ocean", "RGB")
 
 
 class BreakoutDataset(GenericDataset):
@@ -70,7 +87,7 @@ class BreakoutDataset(GenericDataset):
         Assumes the data folder is in the root directory of the repo.
     """
     def __init__(self):
-        super().__init__("data/breakout")
+        super().__init__("data/breakout", "L")
 
 #################################################
 
