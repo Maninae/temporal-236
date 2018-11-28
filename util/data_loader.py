@@ -9,32 +9,23 @@ from util.paths import sequences_dir
 from PIL import Image
 from torchvision import transforms
 
-
-
-
-
-class BreakoutDataset(Dataset):
-    """ Specifically for breakout as a simple case right now,
-        but can generalize easily to other problems. In fact, we
-        eventually want to utilize the train/val separation under
-        utils.paths.data_dir, not read everything from the
-        "sequences-raw" directory.
-
+class GenericDataset(Dataset):
+    """
         We want to return x=(frame_k, frame_k+2), y=(frame_k+1).
     """
-    
+
     _default_transforms = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
+        transforms.Normalize((0.5,), (0.5,))])  # mean and stddev
 
-    def __init__(self, transforms=None):
-        super(BreakoutDataset, self).__init__()
-        
+    def __init__(self, directory, transforms=None):
+        super(GenericDataset, self).__init__()
+
         # Path is relative to repo root
-        
-        # TODO: Change back to "all-framnes" or migrate completely to "square-frames{"
 
-        self.directory = join(sequences_dir, "breakout", "square-frames")
+        # TODO: Change back to "all-framnes" or migrate completely to "all-frames{"
+
+        self.directory = directory
         # self.directory = join(sequences_dir, "breakout", "all-frames")
         self.files = sorted([filename for filename in os.listdir(self.directory) if filename.endswith(".png")])
         self.transforms = transforms if transforms is not None else BreakoutDataset._default_transforms
@@ -44,29 +35,32 @@ class BreakoutDataset(Dataset):
         """
         return len(self.files) - 2
 
-
     def _tensor_from_img_file(self, filename):
         filepath = join(self.directory, filename)
         image = Image.open(filepath).convert("L")
         return self.transforms(image)
 
-
     def __getitem__(self, i):
         """ Supports integer indexing from 0 to len(self) exclusive.
         """
-        before, current, after = map(self._tensor_from_img_file, self.files[i:i+3])
-        
+        before, current, after = map(self._tensor_from_img_file, self.files[i:i + 3])
+
         x = (before, after)
         y = current
         return (x, y)
 
+class OceanDataset(GenericDataset):
+    def __init__(self):
+        self.directory = join(sequences_dir, "ocean", "all-frames")
+        super(OceanDataset, self).__init__(self.directory)
 
 
+class BreakoutDataset(GenericDataset):
+    def __init__(self):
+        self.directory = join(sequences_dir, "breakout", "all-frames")
+        super(BreakoutDataset, self).__init__(self.directory)
 
 #################################################
-
-
-
 
 class AnimatedDataset(Dataset):
     """ The dataset of consecutive triplets of frames from one of the animated sequences.
