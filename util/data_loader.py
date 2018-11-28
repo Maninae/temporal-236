@@ -1,5 +1,6 @@
+import random
 import os
-from os.path import join, isdir, basename
+from os.path import join, isdir, isfile, basename
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -77,9 +78,6 @@ class AnimatedDataset(Dataset):
     _default_transforms = transforms.Compose([
         transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
 
-    _augmented_transforms = transforms.Compose([
-        # Data augmentation? horizontal flip but ALL 3 frames in triplet only
-        transforms.Normalize((0.5,), (0.5,))]) # mean and stddev
 
     # Debug print
     def dprint(self, *args, **kwargs):
@@ -87,11 +85,11 @@ class AnimatedDataset(Dataset):
             return print("[AnimatedDataset]", *args, **kwargs)
 
 
-    def __init__(self, directory, cut_threshold=4e5, transforms=None, debug=False):
+    def __init__(self, directory, cut_threshold=16000, transforms=None, debug=False):
         super(AnimatedDataset, self).__init__()
         
         # Debugging: video cut heuristic
-        # self.research_stream = open("pixel_deltas.txt", "w")
+        # self.research_stream = open("png_pixel_deltas.txt", "w")
 
         self.debug = debug
         self.directory = directory
@@ -116,8 +114,15 @@ class AnimatedDataset(Dataset):
 
         self.files_dict = {}
         self.selectable_dict = {}
+        if isfile():
+            try:
+                return
+            except:
+                pass # Continue on to construct these dicts from scratch
+
+        # Construct the files_dict and selectable_dict
         for dirpath in video_dirs:
-            files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".jpg")])
+            files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".png")])
             if len(files) < 3:
                 continue # Ignore this directory, not enough frames to form triplets
 
@@ -150,7 +155,7 @@ class AnimatedDataset(Dataset):
             is_cut = abs_L1_pixel_delta > self.cut_threshold
             # ..If so, i is invalid, remove the invalid index
             if is_cut:
-                self.dprint("We found a cut, passed threshold with L1 diff of:", abs_L1_pixel_delta)
+                self.dprint("Determined cut, L1 diff:", abs_L1_pixel_delta)
                 cut_indices.append(k)
 
             # Debugging: video cut heuristic
@@ -159,8 +164,8 @@ class AnimatedDataset(Dataset):
             k += 1
             first = second
 
-            if k % 100 == 0:
-                self.dprint("k = %d" % k)
+            if k % 500 == 0:
+                self.dprint("k = %d, nb cuts = %d" % (k, len(cut_indices)))
 
         # To generalize the algorithm for finding selectable indices, we will consider
         #  the end of the video as a cut as well.
@@ -200,8 +205,16 @@ class AnimatedDataset(Dataset):
 
             if query < len(selectable_indices):
                 index = selectable_indices[query]
-                before, current, after = map(self.transforms, map(self._tensor_from_img_file, files[index:index+3]))
+                three_images = map(self.transforms, map(self._tensor_from_img_file, files[index:index+3]))
+                
+                # Apply our data augmentation transforms (horz flip) with a 50% chance. 
+                should_hflip = random.random() < 0.5
+                if should_hflip:
+                    three_images = map(transforms.RandomHorizontalFlip(p=1.), three_images)
+                    
+                before, current, after = three_images
                 break
+
             query -= len(selectable_indices)
         
         x = (before, after)

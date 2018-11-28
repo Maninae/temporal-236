@@ -1,6 +1,6 @@
 import torch
 from matplotlib import pyplot as plt
-
+import numpy as np
 
 def read_pixel_deltas(filename):
     with open(filename, "r") as f:
@@ -23,5 +23,9 @@ def create_and_save_histogram(deltas, savepath, nb_buckets=50):
 
 
 if __name__ == "__main__":
-    deltas = read_pixel_deltas("animated_dataset_pixel_deltas.txt")
-    create_and_save_histogram(deltas, "pd_histogram.png")
+    deltas = read_pixel_deltas("pngformat_pixel_deltas.txt")
+    #  print(np.argsort(np.argsort(deltas)) * 100 / (len(deltas) - 1)) # Get percentiles
+    print(np.percentile(deltas, 99))
+    quit()
+    
+    create_and_save_histogram(deltas, "pngformat_pd_histogram.png")
