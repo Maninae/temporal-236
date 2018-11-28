@@ -1,6 +1,6 @@
 # Model config
-channels: [1, 20, 40, 80]   # Channel depths for discriminator and generator
-img_size: 256               # Size of each image dimension
+channels: 1                 # Number of channels in each image.
+img_size: 256               # Size of each image dimension. Must be an exact power of 2
 
 # Training config
 n_epochs: 200               # Number of epochs of training
