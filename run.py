@@ -12,14 +12,17 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pickle
 import pprint
+import yaml
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-import yaml
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+
+import torchvision.transforms as transforms
 from torchvision import datasets
 from torchvision.utils import save_image
 
@@ -32,7 +35,7 @@ from util.datasets import dataset_factory
 
 # Load config from file
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="util/config.yaml", 
+parser.add_argument("--config", type=str, default="util/breakout_config.yaml", 
                     help="path to config file")
 args = parser.parse_args()
 with open(args.config, "r") as f:
@@ -71,7 +74,9 @@ optimizer_D = torch.optim.Adam(discriminator.parameters(),
                                betas=(config["b1"], config["b2"]))
 
 # Initialize dataloader
-dataset = dataset_factory(config["dataset"])
+dataset_name = config["dataset"]
+# Load dataset from pickle, or call factory to construct one
+dataset = dataset_factory(dataset_name, debug=True)
 dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 
 # ----------
@@ -140,7 +145,7 @@ for epoch in range(config["n_epochs"]):
         if batches_done % config["sample_interval"] == 0:
             save_image(
                 gen_imgs.data[:25], 
-                "samples/{}/{}.png".format(config["dataset"], batches_done)
+                "samples/{}/{}.png".format(config["dataset"], batches_done),
                 nrow=5, normalize=True
             )
             # TODO: Add code to plot losses (and other metrics) here

@@ -2,6 +2,7 @@
 import os
 import random
 import torch
+import pickle
 from os.path import basename
 from os.path import isdir
 from os.path import isfile
@@ -11,11 +12,19 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-def dataset_factory(dataset):
+def dataset_factory(dataset, debug=False):
     """ Returns a Dataset instance for the given `dataset` name. """
-    if dataset == "animated": return AnimatedDataset()
+    if dataset == "animated":
+        with open("data/animated/selectable_dict.pkl", "rb") as f:
+            selectable_dict = pickle.load(f)
+        with open("data/animated/files_dict.pkl", "rb") as f:
+            files_dict = pickle.load(f)
+        return AnimatedDataset.from_dicts(files_dict, selectable_dict, debug=debug)
+
     if dataset == "breakout": return BreakoutDataset()
+
     if dataset == "ocean": return OceanDataset()
+
     raise Exception("Invalid dataset: {}".format(dataset))
     
 
@@ -108,7 +117,18 @@ class AnimatedDataset(Dataset):
             return print("[AnimatedDataset]", *args, **kwargs)
 
 
-    def __init__(self, directory, cut_threshold=15000, transforms=None, debug=False):
+    @classmethod
+    def from_dicts(cls, files_dict, selectable_dict, transforms=None, debug=False):
+        dataset = cls("data/animated", cut_threshold=15000, transforms=transforms, reconstruct=False, debug=debug)
+        dataset.dprint("Loading dicts from pickle.")
+        dataset.files_dict = files_dict
+        dataset.selectable_dict = selectable_dict
+        dataset.len = sum(map(len, dataset.selectable_dict.values()))
+        dataset.dprint("New len:", dataset.len)
+        return dataset
+        
+
+    def __init__(self, directory, cut_threshold=15000, transforms=None, reconstruct=True, debug=False):
         super(AnimatedDataset, self).__init__()
         
         # Debugging: video cut heuristic
@@ -138,6 +158,16 @@ class AnimatedDataset(Dataset):
         self.files_dict = {}
         self.selectable_dict = {}
         
+        if reconstruct:
+            self._construct_files_and_selectable_dicts(video_dirs)
+        
+        self.len = sum(map(len, self.selectable_dict.values())) # Sum of the len() of selectable indices for all dirs
+        self.dprint("len(self):", self.len)
+
+        self.transforms = transforms if transforms is not None else AnimatedDataset._default_transforms
+        # self.research_stream.close()
+
+    def _construct_files_and_selectable_dicts(self, video_dirs):
         # Construct the files_dict and selectable_dict
         for dirpath in video_dirs:
             files = sorted([join(dirpath, p) for p in os.listdir(dirpath) if p.endswith(".png")])
@@ -151,12 +181,6 @@ class AnimatedDataset(Dataset):
             
             self.dprint("%s: %d JPGs, %d selectable."
                         % (basename(dirpath), len(files), len(self.selectable_dict[dirpath])))
-        
-        self.len = sum(map(len, self.selectable_dict.values())) # Sum of the len() of selectable indices for all dirs
-        self.dprint("len(self):", self.len)
-
-        self.transforms = transforms if transforms is not None else AnimatedDataset._default_transforms
-        # self.research_stream.close()
 
 
     def _selectable_indices_without_cuts(self, list_of_files):
@@ -205,9 +229,17 @@ class AnimatedDataset(Dataset):
         return self.len
 
 
-    def _tensor_from_img_file(self, filepath):
+    def _image_from_img_file(self, filepath):
         image = Image.open(filepath).convert("L")
+        return image
+
+    def _tensor_from_image(self, image):
         return transforms.ToTensor()(image)
+
+    # Deprecated
+    def _tensor_from_img_file(self, filepath):
+        image = _image_from_img_file(filepath)
+        return _tensor_from_image(image)
 
 
     def __getitem__(self, i):
@@ -223,14 +255,14 @@ class AnimatedDataset(Dataset):
 
             if query < len(selectable_indices):
                 index = selectable_indices[query]
-                three_images = map(self.transforms, map(self._tensor_from_img_file, files[index:index+3]))
+                three_images = map(self._image_from_img_file, files[index:index+3])
                 
                 # Apply our data augmentation transforms (horz flip) with a 50% chance. 
                 should_hflip = random.random() < 0.5
                 if should_hflip:
                     three_images = map(transforms.RandomHorizontalFlip(p=1.), three_images)
                     
-                before, current, after = three_images
+                before, current, after = map(self.transforms, map(self._tensor_from_image, three_images))
                 break
 
             query -= len(selectable_indices)
