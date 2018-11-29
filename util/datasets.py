@@ -230,7 +230,7 @@ class AnimatedDataset(Dataset):
 
 
     def _image_from_img_file(self, filepath):
-        image = Image.open(filepath).convert("L")
+        image = Image.open(filepath).convert("RGB")
         return image
 
     def _tensor_from_image(self, image):

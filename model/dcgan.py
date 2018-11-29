@@ -35,19 +35,21 @@ class Generator(nn.Module):
                 nn.Conv2d(in_channels, out_channels, 3, stride=1, padding=1),
             ]
 
+        # TODO: Wire outputs from x_to_z blocks to inputs of z_to_y blocks
+
         # Maps the before and after frames to latent representations
         self.x_to_z = nn.Sequential(
-            *generator_x_to_z_block(2 * channels, 20),
-            *generator_x_to_z_block(20, 40),
-            *generator_x_to_z_block(40, 80),
+            *generator_x_to_z_block(2 * channels, 32),
+            *generator_x_to_z_block(32, 64),
+            *generator_x_to_z_block(64, 128),
             nn.Tanh(),
         )
 
         # Maps latent representations to the interpolated frames
         self.z_to_y = nn.Sequential(
-            *generator_z_to_y_block(80, 40),
-            *generator_z_to_y_block(40, 20),
-            *generator_z_to_y_block(20, channels),
+            *generator_z_to_y_block(128, 64),
+            *generator_z_to_y_block(64, 32),
+            *generator_z_to_y_block(32, channels),
             nn.Tanh()
         )
 
@@ -88,15 +90,15 @@ class Discriminator(nn.Module):
 
         # Maps the frames to latent representations
         self.model = nn.Sequential(
-            *discriminator_block(channels, 20),
-            *discriminator_block(20, 40),
-            *discriminator_block(40, 80)
+            *discriminator_block(channels, 32),
+            *discriminator_block(32, 64),
+            *discriminator_block(64, 128)
         )
 
         # Computes likelihoods for each frame from latent representations
         ds_size = img_size // 8 # factor of 2 for each block
         self.adv_layer = nn.Sequential(
-            nn.Linear(80 * ds_size ** 2, 1),
+            nn.Linear(128 * ds_size ** 2, 1),
             nn.Sigmoid()
         )
 

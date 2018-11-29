@@ -35,7 +35,7 @@ from util.datasets import dataset_factory
 
 # Load config from file
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="util/breakout_config.yaml", 
+parser.add_argument("--config", type=str, default="util/configs/breakout.yaml", 
                     help="path to config file")
 args = parser.parse_args()
 with open(args.config, "r") as f:
@@ -132,9 +132,8 @@ for epoch in range(config["n_epochs"]):
 
         # Print progress
         print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]" % 
-            (epoch, config["n_epochs"], i, len(dataloader), d_loss.item(), 
-             g_loss.item())
-        )
+              (epoch, config["n_epochs"], i, len(dataloader), d_loss.item(), 
+              g_loss.item()))
 
         # Store losses for plotting
         d_losses.append(d_loss.item())
@@ -143,11 +142,9 @@ for epoch in range(config["n_epochs"]):
         # Generate sample output
         batches_done = epoch * len(dataloader) + i
         if batches_done % config["sample_interval"] == 0:
-            save_image(
-                gen_imgs.data[:25], 
-                "samples/{}/{}.png".format(config["dataset"], batches_done),
-                nrow=5, normalize=True
-            )
+            save_image(gen_imgs.data[:25], 
+                       "samples/{}/{}.png".format(config["dataset"], batches_done),
+                       nrow=5, normalize=True)
             # TODO: Add code to plot losses (and other metrics) here
 
     # Save the state of the model
