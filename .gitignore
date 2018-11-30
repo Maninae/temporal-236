@@ -1,4 +1,6 @@
+checkpoints/*
 data/*
+generated/*
 samples/*
 .DS_Store
 
