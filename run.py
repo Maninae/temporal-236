@@ -144,9 +144,9 @@ for epoch in range(config["n_epochs"]):
             # TODO: Add code to plot losses (and other metrics) here
 
     # Save the state of the model
-    torch.save((generator.state_dict,
-                discriminator.state_dict,
-                optimizer_G.state_dict,
-                optimizer_D.state_dict), 
+    torch.save((generator.state_dict(),
+                discriminator.state_dict(),
+                optimizer_G.state_dict(),
+                optimizer_D.state_dict()), 
                 "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
 
