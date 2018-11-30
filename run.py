@@ -27,9 +27,9 @@ from torchvision import datasets
 from torchvision.utils import save_image
 
 # Custom imports
-from model.dcgan import Discriminator
-from model.dcgan import Generator
-from model.dcgan import weights_init
+from model.dcgan_v1 import Discriminator
+from model.dcgan_v1 import Generator
+from model.dcgan_v1 import weights_init
 from util.datasets import dataset_factory
 
 
