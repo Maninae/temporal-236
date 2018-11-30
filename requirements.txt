@@ -3,3 +3,4 @@ numpy
 pyyaml
 torch
 torchvision
+tqdm
