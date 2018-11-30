@@ -14,16 +14,12 @@ import numpy as np
 import os
 import pickle
 import pprint
-import yaml
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import yaml
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-
-import torchvision.transforms as transforms
-from torchvision import datasets
 from torchvision.utils import save_image
 
 # Custom imports
@@ -154,17 +150,3 @@ for epoch in range(config["n_epochs"]):
                 optimizer_D.state_dict), 
                 "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
 
-# todo: uncomment this if you want to save the generated images for calculating FID score
-# count = 0
-# for i, (x, y) in enumerate(dataloader):
-#     inputs = Variable(torch.cat(x, 1).type(Tensor))
-#     gen_imgs = generator(inputs)
-#     for i in range(x[0].shape[0]):
-#         save_image(gen_imgs[i].data,
-#                    "generated/{}/{}.png".format(config["dataset"], count),
-#                    normalize=True)
-#         count += 1
-#     if count > 1500:
-#         break # arbitrary cutoff so my computer won't freeze
-
-        
