@@ -16,7 +16,7 @@ from util.datasets import dataset_factory
 
 
 # Number of images to generate
-MAX_COUNT = 10000
+MAX_COUNT = 500
 # Owen: Testing out bugfix re: setting model to eval mode
 # MAX_COUNT = 10
 
@@ -68,7 +68,10 @@ dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 with tqdm(total=MAX_COUNT) as pbar:
     count = 0
     for i, (x, y) in enumerate(dataloader):
-        inputs = Variable(torch.cat(x, 1).type(Tensor))
+        if config["dataset"] == "animated":
+            inputs = Variable(torch.cat((x[0], y), 1).type(Tensor))
+        else:
+            inputs = Variable(torch.cat(x, 1).type(Tensor))
         gen_imgs = generator(inputs)
         for i in range(x[0].shape[0]):
             save_image(gen_imgs[i].data,
