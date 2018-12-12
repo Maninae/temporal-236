@@ -13,4 +13,5 @@ lr: 0.0002                  # Adam: learning rate
 b1: 0.5                     # Adam: decay of first order momentum of gradient
 b2: 0.999                   # Adam: decay of first order momentum of gradient
 n_cpu: 8                    # Number of CPU threads to use during batch preparation
-sample_interval: 400        # Interval between image sampling
+train_interval: 400         # Interval between image sampling for training set
+val_interval: 10            # Interval between image sampling for validation set

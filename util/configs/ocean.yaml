@@ -7,10 +7,11 @@ channels: 3                 # Number of channels in each image. 1 for grayscale,
 img_size: 256               # Size of each image dimension. Must be an exact power of 2
 
 # Training config
-n_epochs: 200               # Number of epochs of training
+n_epochs: 50                # Number of epochs of training
 batch_size: 64              # Size of the batches
 lr: 0.0002                  # Adam: learning rate
 b1: 0.5                     # Adam: decay of first order momentum of gradient
 b2: 0.999                   # Adam: decay of first order momentum of gradient
 n_cpu: 8                    # Number of CPU threads to use during batch preparation
-sample_interval: 400        # Interval between image sampling
+train_interval: 400         # Interval between image sampling for training set
+val_interval: 50            # Interval between image sampling for validation set

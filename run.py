@@ -160,7 +160,7 @@ for epoch in range(config["n_epochs"]):
 
         # Generate sample output
         batches_done = epoch * len(trainloader) + i
-        if batches_done % config["sample_interval"] == 0:
+        if batches_done % config["train_interval"] == 0:
             save_image(fake_imgs.data[:25], 
                        "samples/{}_train/{}.png".format(config["dataset"], batches_done),
                        nrow=5, normalize=True)
@@ -228,7 +228,7 @@ for epoch in range(config["n_epochs"]):
 
         # Generate sample output
         batches_done = epoch * len(valloader) + i
-        if batches_done % config["sample_interval"] == 0:
+        if batches_done % config["val_interval"] == 0:
             save_image(fake_imgs.data[:25], 
                        "samples/{}_val/{}.png".format(config["dataset"], batches_done),
                        nrow=5, normalize=True)

@@ -91,7 +91,7 @@ class OceanTrain(GenericDataset):
         
         Assumes the data folder is in the root directory of the repo.
     """
-    def __init__(self, dataset):
+    def __init__(self):
         super().__init__("data/ocean_train", "RGB")
 
 
