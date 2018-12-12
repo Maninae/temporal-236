@@ -181,7 +181,7 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda, interpolate
         files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
 
         # todo: change if don't want grayscale
-        imgs = np.array([imread(str(fn), "L").astype(np.float32) for fn in files])
+        imgs = np.array([imread(str(fn), "RGB").astype(np.float32) for fn in files])
 
         # todo: remove me. for baseline only
         if interpolate:
@@ -193,7 +193,7 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda, interpolate
         # imgs = imgs.transpose((0, 3, 1, 2)) todo: add me back
 
         # Rescale images to be between 0 and 1
-        imgs /= 255
+        # imgs /= 255
 
         m, s = calculate_activation_statistics(imgs, model, batch_size,
                                                dims, cuda)
@@ -224,9 +224,9 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    fid_value = calculate_fid_given_paths(['abreakout_small', 'abreakout_small_generated'],
+    fid_value = calculate_fid_given_paths(["data/breakout", 'generated/breakout'],
                                           64,      # batch size
-                                          False,  # false = don't use gpu
+                                          True,  # false = don't use gpu
                                           2048)   # dim
 
     # todo: I commented this out. feel free to add back or remove

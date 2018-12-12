@@ -2,6 +2,7 @@ checkpoints/*
 data/*
 generated/*
 samples/*
+plots/*
 .DS_Store
 
 

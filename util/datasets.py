@@ -14,6 +14,8 @@ from torch.utils.data import DataLoader
 
 def dataset_factory(dataset, debug=False):
     """ Returns a Dataset instance for the given `dataset` name. """
+    
+    # TODO: Figure out how to do train/val/test split for Animated
     if dataset == "animated":
         with open("data/animated/selectable_dict.pkl", "rb") as f:
             selectable_dict = pickle.load(f)
@@ -21,9 +23,12 @@ def dataset_factory(dataset, debug=False):
             files_dict = pickle.load(f)
         return AnimatedDataset.from_dicts(files_dict, selectable_dict, debug=debug)
 
-    if dataset == "breakout": return BreakoutDataset()
-
-    if dataset == "ocean": return OceanDataset()
+    if dataset == "breakout_train": return BreakoutTrain()
+    if dataset == "breakout_val": return BreakoutVal()
+    if dataset == "breakout_test": return BreakoutTest()
+    if dataset == "ocean_train": return OceanTrain()
+    if dataset == "ocean_val": return OceanVal()
+    if dataset == "ocean_test": return OceanTest()
 
     raise Exception("Invalid dataset: {}".format(dataset))
     
@@ -81,22 +86,58 @@ class GenericDataset(Dataset):
         return self.transforms(image)
 
 
-class OceanDataset(GenericDataset):
+class OceanTrain(GenericDataset):
     """ Serves examples from the `ocean.mp4` video. 
         
         Assumes the data folder is in the root directory of the repo.
     """
+    def __init__(self, dataset):
+        super().__init__("data/ocean_train", "RGB")
+
+
+class OceanVal(GenericDataset):
+    """ Serves validation examples from the `ocean.mp4` video.
+
+        Assumes the data folder is in the root directory of the repo.
+    """
     def __init__(self):
-        super().__init__("data/ocean", "RGB")
+        super().__init__("data/ocean_val", "RGB")
 
 
-class BreakoutDataset(GenericDataset):
-    """ Serves examples from the Breakout video. 
+class OceanTest(GenericDataset):
+    """ Serves test examples from the `ocean.mp4` video.
+
+        Assumes the data folder is in the root directory of the repo.
+    """ 
+    def __init__(self):
+        super().__init__("data/ocean_test", "RGB")
+
+
+class BreakoutTrain(GenericDataset):
+    """ Serves training examples from the Breakout video.
     
         Assumes the data folder is in the root directory of the repo.
     """
     def __init__(self):
-        super().__init__("data/breakout", "L")
+        super().__init__("data/breakout_train", "L")
+
+
+class BreakoutVal(GenericDataset):
+    """ Serves validation examples from the Breakout video.
+        
+        Assumes the data folder is in the root directory of the repo.
+    """
+    def __init__(self):
+        super().__init__("data/breakout_val", "L")
+
+
+class BreakoutTest(GenericDataset):
+    """ Serves test examples from the Breakout video.
+
+        Assumes the data folder is in the root directory of the repo.
+    """
+    def __init__(self):
+        super().__init__("data/breakout_test", "L")
 
 #################################################
 
