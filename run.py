@@ -187,10 +187,18 @@ for epoch in range(config["n_epochs"]):
         del d_loss_train
         torch.cuda.empty_cache() 
 
+    # Save the state of the model
+    torch.save((generator.state_dict(),
+               discriminator.state_dict(),
+               optimizer_G.state_dict(),
+               optimizer_D.state_dict()),
+               "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
+
+    if config["dataset"] == "animated":
+        continue
     # ------------
     #  VALIDATION
     # ------------
-
     # Put models into eval mode
     generator.eval()
     discriminator.eval()
