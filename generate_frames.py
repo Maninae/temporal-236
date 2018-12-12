@@ -10,14 +10,23 @@ from torchvision.utils import save_image
 from tqdm import tqdm
 
 # Custom imports
-from model.dcgan_v1 import Generator
+from model.dcgan_v2 import Generator  # Owen: dcgan_v1 may have made Animated checkpoints incompatible
+# from model.dcgan import Generator
 from util.datasets import dataset_factory
 
 
 # Number of images to generate
 MAX_COUNT = 10000
+# Owen: Testing out bugfix re: setting model to eval mode
+# MAX_COUNT = 10
 
-# Parse command line arguments
+# 
+""" Parse command line arguments
+
+Sample Commands:
+    python generate_frames.py
+    python3 generate_frames.py --config util/configs/animated.yaml --checkpoint checkpoints/animated/checkpoint_199.pth
+"""
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=str, default="util/configs/breakout.yaml",
                     help="path to config file")
@@ -25,6 +34,8 @@ parser.add_argument("--checkpoint", type=str,
                     default="checkpoints/breakout/checkpoint_0.pth",
                     help="path to checkpoint file")
 args = parser.parse_args()
+
+
 
 # Load config from file
 with open(args.config, "r") as f:
@@ -45,7 +56,9 @@ Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTen
 generator = Generator(config["channels"]).to(device)
 print("Loading checkpoint file: {}".format(args.checkpoint))
 state = torch.load(args.checkpoint)
-generator.load_state_dict(state[0])
+# Get generator's state_dict() function from (G, D, Optimizer) tuple, and call it.
+# Returns a state dict, and feed this into loading method
+generator.load_state_dict(state[0]())
 
 # Initialize dataloader
 dataset = dataset_factory(config["dataset"])
@@ -59,7 +72,7 @@ with tqdm(total=MAX_COUNT) as pbar:
         gen_imgs = generator(inputs)
         for i in range(x[0].shape[0]):
             save_image(gen_imgs[i].data,
-                       "generated/{}/{}.png".format(config["dataset"], count),
+                       "generated/{}/{:05d}.png".format(config["dataset"], count),
                         normalize=True)
             count += 1
             pbar.update(1)
