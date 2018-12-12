@@ -181,10 +181,18 @@ for epoch in range(config["n_epochs"]):
             plt.savefig("plots/{}_train/g_{}.png".format(config["dataset"], batches_done))
 
 
+    # Save the state of the model
+    torch.save((generator.state_dict(),
+               discriminator.state_dict(),
+               optimizer_G.state_dict(),
+               optimizer_D.state_dict()),
+               "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
+
+    if config["dataset"] == "animated":
+        continue
     # ------------
     #  VALIDATION
     # ------------
-
     # Put models into eval mode
     generator.eval()
     discriminator.eval()
@@ -248,13 +256,6 @@ for epoch in range(config["n_epochs"]):
             plt.title("validation loss for generator")
             plt.savefig("plots/{}_val/g_{}.png".format(config["dataset"], batches_done))
 
-
-    # Save the state of the model
-    torch.save((generator.state_dict(),
-               discriminator.state_dict(),
-               optimizer_G.state_dict(),
-               optimizer_D.state_dict()),
-               "checkpoints/{}/checkpoint_{}.pth".format(config["dataset"], epoch))
 
 """
 for epoch in range(config["n_epochs"]):
