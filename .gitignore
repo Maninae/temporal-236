@@ -2,6 +2,7 @@ assets/*
 checkpoints/*
 data/*
 generated/*
+real/*
 samples/*
 plots/*
 .DS_Store
