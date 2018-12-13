@@ -181,23 +181,25 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda, interpolate
         path = pathlib.Path(path)
         files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
 
-        imgs = np.array([imread(str(fn), "L").astype(np.float32) for fn in files])
+        files = list(sorted(files, key=lambda x: x.name))
+
+        # or use L
+        imgs = np.array([imread(str(fn), mode="RGB").astype(np.float32) for fn in files])
 
         # todo: remove me. for baseline only
         if interpolate:
-            imgs = [(imgs[i] + imgs[i + 2]) * 0.5 for i in range(len(imgs) - 2)]
-            # img1 = imread("abreakout_small/000-010-074.png", "L").astype(np.float32)
-            # img2 = imread("abreakout_small/000-010-076.png", "L").astype(np.float32)
-            # save_image(torch.tensor((img1 + img2) * 0.5),
-            #            "interpolated/{}/{}.png".format("breakout",  1), normalize=True)
+            imgs = np.array([(imgs[i] + imgs[i + 2]) * 0.5 for i in range(len(imgs) - 2)])
 
         # Bring images to shape (B, 3, H, W)
-        imgs = np.expand_dims(imgs, 1)
-        imgs = np.repeat(imgs, 3, axis=1)
-        # imgs = imgs.transpose((0, 3, 1, 2)) todo: add me back
+        # todo: only need if grayscale
+        # imgs = np.expand_dims(imgs, 1)
+        # imgs = np.repeat(imgs, 3, axis=1)
+
+
+        imgs = imgs.transpose((0, 3, 1, 2)) # todo: need if not grayscale
 
         # Rescale images to be between 0 and 1
-        # imgs /= 255
+        imgs /= 255 # todo: need if not grayscale
 
         m, s = calculate_activation_statistics(imgs, model, batch_size,
                                                dims, cuda)
@@ -218,7 +220,7 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
         model.cuda()
 
     m1, s1 = _compute_statistics_of_path(paths[0], model, batch_size,
-                                         dims, cuda, interpolate=True)
+                                         dims, cuda, interpolate=True) 
     m2, s2 = _compute_statistics_of_path(paths[1], model, batch_size,
                                          dims, cuda)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
@@ -228,17 +230,8 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    fid_value = calculate_fid_given_paths(["data/breakout", 'generated/breakout'],
+    fid_value = calculate_fid_given_paths(["ocean_real", 'ocean_real'],
                                           64,      # batch size
-                                          True,  # false = don't use gpu
+                                          False,  # false = don't use gpu
                                           2048)   # dim
-
-    # todo: I commented this out. feel free to add back or remove
-    # args = parser.parse_args()
-    # os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    #
-    # fid_value = calculate_fid_given_paths(args.path,
-    #                                       args.batch_size,
-    #                                       args.gpu != '',
-    #                                       args.dims)
     print('FID: ', fid_value)
