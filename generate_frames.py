@@ -51,19 +51,23 @@ os.makedirs("generated/{}".format(config["dataset"]), exist_ok=True)
 
 # Specify device to use for processing
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # Specify default tensor type
 Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
 # Initialize generator
 generator = Generator(config["channels"]).to(device)
 print("Loading checkpoint file: {}".format(args.checkpoint))
+
+
 state = torch.load(args.checkpoint, map_location='cpu')
 # Get generator's state_dict() function from (G, D, Optimizer) tuple, and call it.
 # Returns a state dict, and feed this into loading method
 generator.load_state_dict(state[0]) # ()
 
+
 # Initialize dataloader
+config["dataset"] = "animated_test"
+config["batch_size"] = 1
 dataset = dataset_factory(config["dataset"])
 dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 
@@ -71,15 +75,15 @@ dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True)
 with tqdm(total=MAX_COUNT) as pbar:
     count = 0
     for i, (x, y) in enumerate(dataloader):
-        if config["dataset"] == "animated":
-            inputs = Variable(torch.cat((x[0], y), 1).type(Tensor))
-        else:
-            inputs = Variable(torch.cat(x, 1).type(Tensor))
+        inputs = Variable(torch.cat(x, 1).type(Tensor))
         gen_imgs = generator(inputs)
         for i in range(x[0].shape[0]):
             save_image(gen_imgs[i].data,
                        "generated/{}/{:05d}.png".format(config["dataset"], count),
                         normalize=True)
+            save_image(y[i].data,
+                       "real/{}/{:05d}.png".format(config["dataset"], count),
+                       normalize=True)
             count += 1
             pbar.update(1)
         if count > MAX_COUNT:
