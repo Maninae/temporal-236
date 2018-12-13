@@ -17,12 +17,12 @@ args = parser.parse_args()
 
 # Sanity check
 assert(os.path.isdir(args.src))
-assert(math.isclose(args.train + args.val + args.test, 1.0))
+#assert(math.isclose(args.train + args.val + args.test, 1.0))
 
 # Create the required directories
-os.makedirs("{}_train".format(args.src), exist_ok=True)
-os.makedirs("{}_val".format(args.src), exist_ok=True)
-os.makedirs("{}_test".format(args.src), exist_ok=True)
+os.makedirs("{}_train".format(args.src)) #, exist_ok=True
+os.makedirs("{}_val".format(args.src)) #exist_ok=True
+os.makedirs("{}_test".format(args.src)) #, exist_ok=True
 
 # Compute number of examples in each dataset
 filenames = sorted(os.listdir(args.src))
@@ -38,13 +38,15 @@ for i, filename in enumerate(filenames):
     
     # Use first 80% for training
     if i < num_train:
-        shutil.copyfile("{}/{}".format(args.src, filename),
-                        "{}_train/{}".format(args.src, filename))
+        # shutil.copyfile("{}/{}".format(args.src, filename),
+        #                 "{}_train/{}".format(args.src, filename))
+        continue
 
     # Use next 10% for validation
     elif i < num_train + num_val:
-        shutil.copyfile("{}/{}".format(args.src, filename),
-                        "{}_val/{}".format(args.src, filename))
+        # shutil.copyfile("{}/{}".format(args.src, filename),
+        #                 "{}_val/{}".format(args.src, filename))
+        continue
 
     # Use last 10% for test
     else:

@@ -16,7 +16,7 @@ from util.datasets import dataset_factory
 
 
 # Number of images to generate
-MAX_COUNT = 500
+MAX_COUNT = 300
 # Owen: Testing out bugfix re: setting model to eval mode
 # MAX_COUNT = 10
 
@@ -34,6 +34,9 @@ parser.add_argument("--checkpoint", type=str,
                     default="checkpoints/breakout/checkpoint_0.pth",
                     help="path to checkpoint file")
 args = parser.parse_args()
+
+args.config = "util/configs/ocean_test.yaml"
+args.checkpoint = "checkpoints/ocean-new/checkpoint_6.pth"
 
 
 
@@ -55,10 +58,10 @@ Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTen
 # Initialize generator
 generator = Generator(config["channels"]).to(device)
 print("Loading checkpoint file: {}".format(args.checkpoint))
-state = torch.load(args.checkpoint)
+state = torch.load(args.checkpoint, map_location='cpu')
 # Get generator's state_dict() function from (G, D, Optimizer) tuple, and call it.
 # Returns a state dict, and feed this into loading method
-generator.load_state_dict(state[0]())
+generator.load_state_dict(state[0]) # ()
 
 # Initialize dataloader
 dataset = dataset_factory(config["dataset"])

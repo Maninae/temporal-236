@@ -131,6 +131,7 @@ class BreakoutTrain(Subset):
         with open("data/breakout_train_indices.txt") as f:
             indices = list(map(int, f.read().split()))
         super().__init__(Breakout(), indices)
+        #super().__init__("/Volumes/Seagate Backup Plus Drive/cs_236_stuff/ocean_test", "RGB")
 
 
 class BreakoutVal(Subset):
@@ -181,6 +182,7 @@ class AnimatedTest(Subset):
             files_dict = pickle.load(f)
         super().__init__(AnimatedDataset.from_dicts(files_dict, selectable_dict), indices)
 
+        #super().__init__("/Volumes/Seagate Backup Plus Drive/cs_236_stuff/breakout/all-frames_test", "L")
 
 #################################################
 
@@ -203,7 +205,7 @@ class AnimatedDataset(Dataset):
 
     @classmethod
     def from_dicts(cls, files_dict, selectable_dict, transforms=None, debug=False):
-        dataset = cls("data/animated", cut_threshold=15000, transforms=transforms, reconstruct=False, debug=debug)
+        dataset = cls("/Volumes/Seagate Backup Plus Drive/cs_236_stuff/animated", cut_threshold=15000, transforms=transforms, reconstruct=False, debug=debug)
         dataset.dprint("Loading dicts from pickle.")
         dataset.files_dict = files_dict
         dataset.selectable_dict = selectable_dict
