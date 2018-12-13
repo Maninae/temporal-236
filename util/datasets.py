@@ -11,6 +11,8 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+from torch.utils.data.dataset import Subset
+
 
 def dataset_factory(dataset, debug=False):
     """ Returns a Dataset instance for the given `dataset` name. """
@@ -22,10 +24,16 @@ def dataset_factory(dataset, debug=False):
         with open("data/animated/files_dict.pkl", "rb") as f:
             files_dict = pickle.load(f)
         return AnimatedDataset.from_dicts(files_dict, selectable_dict, debug=debug)
+    if dataset == "animated_train": return AnimatedTrain()
+    if dataset == "animated_val": return AnimatedVal()
+    if dataset == "animated_test": return AnimatedTest()
 
+    if dataset == "breakout": return Breakout()
     if dataset == "breakout_train": return BreakoutTrain()
     if dataset == "breakout_val": return BreakoutVal()
     if dataset == "breakout_test": return BreakoutTest()
+
+    if dataset == "ocean": return Ocean()
     if dataset == "ocean_train": return OceanTrain()
     if dataset == "ocean_val": return OceanVal()
     if dataset == "ocean_test": return OceanTest()
@@ -86,58 +94,93 @@ class GenericDataset(Dataset):
         return self.transforms(image)
 
 
-class OceanTrain(GenericDataset):
-    """ Serves examples from the `ocean.mp4` video. 
-        
-        Assumes the data folder is in the root directory of the repo.
-    """
+class Ocean(GenericDataset):
     def __init__(self):
-        super().__init__("data/ocean_train", "RGB")
+        super().__init__("data/ocean", "RGB")
 
-
-class OceanVal(GenericDataset):
-    """ Serves validation examples from the `ocean.mp4` video.
-
-        Assumes the data folder is in the root directory of the repo.
-    """
+class Breakout(GenericDataset):
     def __init__(self):
-        super().__init__("data/ocean_val", "RGB")
+        super().__init__("data/breakout", "L")
 
 
-class OceanTest(GenericDataset):
-    """ Serves test examples from the `ocean.mp4` video.
+##########     The Splits      ####################
 
-        Assumes the data folder is in the root directory of the repo.
-    """ 
+class OceanTrain(Subset):
     def __init__(self):
-        super().__init__("data/ocean_test", "RGB")
+        with open("data/ocean_train_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Ocean(), indices)
 
 
-class BreakoutTrain(GenericDataset):
-    """ Serves training examples from the Breakout video.
-    
-        Assumes the data folder is in the root directory of the repo.
-    """
+class OceanVal(Subset):
     def __init__(self):
-        super().__init__("data/breakout_train", "L")
+        with open("data/ocean_val_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Ocean(), indices)
 
 
-class BreakoutVal(GenericDataset):
-    """ Serves validation examples from the Breakout video.
-        
-        Assumes the data folder is in the root directory of the repo.
-    """
+class OceanTest(Subset):
     def __init__(self):
-        super().__init__("data/breakout_val", "L")
+        with open("data/ocean_test_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Ocean(), indices)
 
 
-class BreakoutTest(GenericDataset):
-    """ Serves test examples from the Breakout video.
-
-        Assumes the data folder is in the root directory of the repo.
-    """
+class BreakoutTrain(Subset):
     def __init__(self):
-        super().__init__("data/breakout_test", "L")
+        with open("data/breakout_train_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Breakout(), indices)
+
+
+class BreakoutVal(Subset):
+    def __init__(self):
+        with open("data/breakout_val_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Breakout(), indices)
+
+
+class BreakoutTest(Subset):
+    def __init__(self):
+        with open("data/breakout_test_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        super().__init__(Breakout(), indices)
+
+
+######## Splits for Animated as well
+
+class AnimatedTrain(Subset):
+    def __init__(self):
+        with open("data/animated_train_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        with open("data/animated/selectable_dict.pkl", "rb") as f:
+            selectable_dict = pickle.load(f)
+        with open("data/animated/files_dict.pkl", "rb") as f:
+            files_dict = pickle.load(f)
+        super().__init__(AnimatedDataset.from_dicts(files_dict, selectable_dict), indices)
+
+
+class AnimatedVal(Subset):
+    def __init__(self):
+        with open("data/animated_val_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        with open("data/animated/selectable_dict.pkl", "rb") as f:
+            selectable_dict = pickle.load(f)
+        with open("data/animated/files_dict.pkl", "rb") as f:
+            files_dict = pickle.load(f)
+        super().__init__(AnimatedDataset.from_dicts(files_dict, selectable_dict), indices)
+
+
+class AnimatedTest(Subset):
+    def __init__(self):
+        with open("data/animated_test_indices.txt") as f:
+            indices = list(map(int, f.read().split()))
+        with open("data/animated/selectable_dict.pkl", "rb") as f:
+            selectable_dict = pickle.load(f)
+        with open("data/animated/files_dict.pkl", "rb") as f:
+            files_dict = pickle.load(f)
+        super().__init__(AnimatedDataset.from_dicts(files_dict, selectable_dict), indices)
+
 
 #################################################
 
